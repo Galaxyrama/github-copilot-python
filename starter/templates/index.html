@@ -1,7 +1,8 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sudoku Game</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
@@ -17,6 +18,7 @@
     <button id="new-game" type="button">New Game</button>
     <button id="hint" type="button">Hint</button>
     <button id="check-solution" type="button">Check Solution</button>
+    <button id="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">Dark / Light Mode</button>
     <span id="message"></span>
   </div>
   <p id="scoreboard-status" aria-live="polite"></p>
@@ -47,6 +49,15 @@
       </div>
       <button id="cancel-new-game" class="secondary-button" type="button">Cancel</button>
     </div>
+  </dialog>
+  <dialog id="completion-modal" aria-labelledby="completion-title">
+    <form id="score-form" class="modal-content">
+      <h2 id="completion-title">Puzzle complete!</h2>
+      <p id="completion-message"></p>
+      <label for="player-name">Name for the leaderboard</label>
+      <input id="player-name" name="player-name" type="text" maxlength="40" autocomplete="name">
+      <button type="submit">Save Score</button>
+    </form>
   </dialog>
   <script src="/static/scoreboard.js"></script>
   <script src="/static/main.js"></script>

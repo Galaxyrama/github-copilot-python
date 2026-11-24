@@ -7,32 +7,31 @@
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === null) return [];
 
-    const scores = JSON.parse(stored);
+    const savedScores = JSON.parse(stored);
     if (
-      !Array.isArray(scores)
-      || scores.some((score) => (
+      !Array.isArray(savedScores)
+      || savedScores.some((score) => (
         !score
         || typeof score.name !== 'string'
-        || !Number.isInteger(score.timeSeconds)
+        || !Number.isInteger(score.time ?? score.timeSeconds)
         || typeof score.level !== 'string'
         || !Number.isInteger(score.hints)
       ))
     ) {
       throw new Error('Saved scoreboard data is invalid.');
     }
-    return scores;
-  }
-
-  function qualifies(timeSeconds) {
-    const scores = getScores();
-    return scores.length < MAX_SCORES
-      || timeSeconds < scores[MAX_SCORES - 1].timeSeconds;
+    return savedScores.map((score) => ({
+      name: score.name,
+      time: score.time ?? score.timeSeconds,
+      hints: score.hints,
+      level: score.level,
+    }));
   }
 
   function addScore(score) {
     const scores = getScores();
     scores.push(score);
-    scores.sort((first, second) => first.timeSeconds - second.timeSeconds);
+    scores.sort((first, second) => first.time - second.time);
     const topScores = scores.slice(0, MAX_SCORES);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(topScores));
     return topScores;
@@ -46,15 +45,27 @@
 
   function render() {
     const body = document.getElementById('scoreboard-body');
-    const scores = getScores();
     body.replaceChildren();
+    const scores = getScores()
+      .sort((first, second) => first.time - second.time)
+      .slice(0, MAX_SCORES);
+
+    if (scores.length === 0) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 5;
+      cell.textContent = 'No scores yet.';
+      row.appendChild(cell);
+      body.appendChild(row);
+      return;
+    }
 
     scores.forEach((score, index) => {
       const row = document.createElement('tr');
       [
         index + 1,
         score.name,
-        formatTime(score.timeSeconds),
+        formatTime(score.time),
         score.level,
         score.hints,
       ].forEach((value) => {
@@ -66,5 +77,5 @@
     });
   }
 
-  window.Scoreboard = { addScore, formatTime, qualifies, render };
+  window.Scoreboard = { addScore, formatTime, render };
 })();

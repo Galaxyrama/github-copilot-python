@@ -96,6 +96,57 @@ def test_hint_route_returns_empty_cell_and_correct_solution_digit(client):
     assert hint["value"] == app_module.CURRENT["solution"][row][col]
 
 
+def test_hint_route_allows_more_than_five_hints_and_only_uses_empty_cells(client):
+    new_game = client.get("/new?clues=69")
+    data = new_game.get_json()
+    board = [row[:] for row in data["puzzle"]]
+    original_empty_cells = {
+        (row, col)
+        for row in range(9)
+        for col in range(9)
+        if board[row][col] == 0
+    }
+    hinted_cells = set()
+
+    for _ in range(6):
+        response = client.post(
+            "/hint",
+            json={"board": board, "game_id": data["game_id"]},
+        )
+
+        assert response.status_code == 200
+        hint = response.get_json()
+        cell = (hint["row"], hint["col"])
+        assert cell in original_empty_cells
+        assert cell not in hinted_cells
+        assert hint["value"] == app_module.CURRENT["solution"][cell[0]][cell[1]]
+        board[cell[0]][cell[1]] = hint["value"]
+        hinted_cells.add(cell)
+
+
+def test_hint_route_ignores_blank_prefilled_cells(client):
+    new_game = client.get("/new?clues=80")
+    data = new_game.get_json()
+    board = [row[:] for row in data["puzzle"]]
+    prefilled_cell = next(
+        (row, col)
+        for row in range(9)
+        for col in range(9)
+        if board[row][col] != 0
+    )
+    board[prefilled_cell[0]][prefilled_cell[1]] = 0
+
+    response = client.post(
+        "/hint",
+        json={"board": board, "game_id": data["game_id"]},
+    )
+
+    assert response.status_code == 200
+    hint = response.get_json()
+    assert (hint["row"], hint["col"]) != prefilled_cell
+    assert data["puzzle"][hint["row"]][hint["col"]] == 0
+
+
 def test_hint_route_reports_no_empty_cells(client):
     new_game = client.get("/new?clues=81")
     data = new_game.get_json()

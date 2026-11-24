@@ -17,6 +17,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/new')
+@app.route('/new-game')
 def new_game():
     difficulty = request.args.get('difficulty', 'medium')
     if difficulty not in sudoku_logic.DIFFICULTY_CLUES:
@@ -76,7 +77,10 @@ def get_hint():
         (row, col)
         for row in range(sudoku_logic.SIZE)
         for col in range(sudoku_logic.SIZE)
-        if board[row][col] == sudoku_logic.EMPTY
+        if (
+            board[row][col] == sudoku_logic.EMPTY
+            and CURRENT['puzzle'][row][col] == sudoku_logic.EMPTY
+        )
     ]
     if not empty_cells:
         return jsonify({'message': 'No empty cells remain'}), 409
