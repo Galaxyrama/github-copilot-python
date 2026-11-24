@@ -1,5 +1,6 @@
 import pytest
 
+import app as app_module
 import sudoku_logic
 
 
@@ -71,3 +72,38 @@ def test_check_route_reports_cells_different_from_solution(client):
     incorrect_response = client.post("/check", json={"board": incorrect_board})
     assert incorrect_response.status_code == 200
     assert incorrect_response.get_json() == {"incorrect": [[0, 0]]}
+
+
+def test_hint_route_returns_empty_cell_and_correct_solution_digit(client):
+    new_game = client.get("/new?clues=80")
+    data = new_game.get_json()
+    empty_cell = next(
+        (row, col)
+        for row in range(9)
+        for col in range(9)
+        if data["puzzle"][row][col] == 0
+    )
+
+    response = client.post(
+        "/hint",
+        json={"board": data["puzzle"], "game_id": data["game_id"]},
+    )
+
+    assert response.status_code == 200
+    hint = response.get_json()
+    row, col = hint["row"], hint["col"]
+    assert (row, col) == empty_cell
+    assert hint["value"] == app_module.CURRENT["solution"][row][col]
+
+
+def test_hint_route_reports_no_empty_cells(client):
+    new_game = client.get("/new?clues=81")
+    data = new_game.get_json()
+
+    response = client.post(
+        "/hint",
+        json={"board": data["puzzle"], "game_id": data["game_id"]},
+    )
+
+    assert response.status_code == 409
+    assert response.get_json() == {"message": "No empty cells remain"}

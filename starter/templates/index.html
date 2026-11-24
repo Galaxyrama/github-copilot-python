@@ -15,9 +15,28 @@
   <div id="sudoku-board"></div>
   <div class="controls">
     <button id="new-game" type="button">New Game</button>
+    <button id="hint" type="button">Hint</button>
     <button id="check-solution" type="button">Check Solution</button>
     <span id="message"></span>
   </div>
+  <p id="scoreboard-status" aria-live="polite"></p>
+  <section class="scoreboard" aria-labelledby="scoreboard-title">
+    <h2 id="scoreboard-title">Top 10 Fastest Times</h2>
+    <div class="scoreboard-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Rank</th>
+            <th scope="col">Name</th>
+            <th scope="col">Time</th>
+            <th scope="col">Level</th>
+            <th scope="col">Hints</th>
+          </tr>
+        </thead>
+        <tbody id="scoreboard-body"></tbody>
+      </table>
+    </div>
+  </section>
   <dialog id="difficulty-modal" aria-labelledby="difficulty-title">
     <div class="modal-content">
       <h2 id="difficulty-title">Choose a difficulty</h2>
@@ -29,6 +48,7 @@
       <button id="cancel-new-game" class="secondary-button" type="button">Cancel</button>
     </div>
   </dialog>
+  <script src="/static/scoreboard.js"></script>
   <script src="/static/main.js"></script>
 </body>
 </html>
