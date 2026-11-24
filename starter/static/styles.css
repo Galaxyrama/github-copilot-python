@@ -11,6 +11,14 @@ h1 {
     color: #333;
 }
 
+.game-status {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 20px auto 0;
+    color: #333;
+}
+
 #sudoku-board {
     display: inline-block;
     margin: 30px auto;
@@ -82,4 +90,72 @@ button:hover {
     margin-left: 20px;
     font-size: 16px;
     color: #d32f2f;
+}
+
+dialog {
+    width: min(90vw, 360px);
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    padding: 24px;
+}
+
+.modal-content h2 {
+    margin: 0 0 20px;
+    color: #333;
+}
+
+.difficulty-options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.difficulty-options button {
+    margin: 0;
+}
+
+.secondary-button {
+    background: #616161;
+}
+
+.secondary-button:hover {
+    background: #4a4a4a;
+}
+
+@media (max-width: 480px) {
+    .game-status {
+        gap: 12px;
+        font-size: 14px;
+    }
+
+    .sudoku-cell {
+        width: 9vw;
+        height: 9vw;
+        max-width: 40px;
+        max-height: 40px;
+        font-size: 18px;
+    }
+
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    #message {
+        flex-basis: 100%;
+        margin: 0;
+    }
 }

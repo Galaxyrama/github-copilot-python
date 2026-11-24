@@ -42,6 +42,13 @@ python app.py
 
 7. Open http://127.0.0.1:5000 in your browser.
 
+## Sudoku difficulty
+
+The New Game button opens a difficulty dialog. Easy, medium, and hard puzzles
+start with 42, 34, and 26 clues respectively; each generated puzzle is checked
+to ensure it has exactly one solution. The `/new` endpoint accepts an optional
+`difficulty` query parameter and defaults to `medium`.
+
 ## Project Instructions
 
 Use GitHub Copilot to refactor the code for this game to add more advanced features. The goal is to create a more modern and maintainable codebase and add additional functionality to the final product. You can use any combination of code completion and chat features, like Ask, Edit, or Agent modes.

@@ -1,6 +1,25 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 let puzzle = [];
+let timerInterval;
+let elapsedSeconds = 0;
+let hintsUsed = 0;
+
+function resetGameStatus(difficulty) {
+  clearInterval(timerInterval);
+  elapsedSeconds = 0;
+  hintsUsed = 0;
+  document.getElementById('difficulty-level').textContent =
+    difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+  document.getElementById('timer').textContent = '00:00';
+  document.getElementById('hints-used').textContent = '0';
+  timerInterval = setInterval(() => {
+    elapsedSeconds += 1;
+    const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+    const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+    document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+  }, 1000);
+}
 
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -47,11 +66,21 @@ function renderPuzzle(puz) {
   }
 }
 
-async function newGame() {
-  const res = await fetch('/new');
-  const data = await res.json();
-  renderPuzzle(data.puzzle);
-  document.getElementById('message').innerText = '';
+async function newGame(difficulty) {
+  const msg = document.getElementById('message');
+  try {
+    const res = await fetch(`/new?difficulty=${encodeURIComponent(difficulty)}`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Unable to start a new game.');
+    }
+    renderPuzzle(data.puzzle);
+    resetGameStatus(data.difficulty);
+    msg.innerText = '';
+  } catch (error) {
+    msg.style.color = '#d32f2f';
+    msg.innerText = error.message || 'Unable to start a new game.';
+  }
 }
 
 async function checkSolution() {
@@ -98,8 +127,25 @@ async function checkSolution() {
 
 // Wire buttons
 window.addEventListener('load', () => {
-  document.getElementById('new-game').addEventListener('click', newGame);
+  const difficultyModal = document.getElementById('difficulty-modal');
+  document.getElementById('new-game').addEventListener('click', () => {
+    difficultyModal.showModal();
+  });
+  document.querySelectorAll('[data-difficulty]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const {difficulty} = button.dataset;
+      difficultyModal.close();
+      newGame(difficulty);
+    });
+  });
+  document.getElementById('cancel-new-game').addEventListener('click', () => {
+    difficultyModal.close();
+  });
+  difficultyModal.addEventListener('click', (event) => {
+    if (event.target === difficultyModal) {
+      difficultyModal.close();
+    }
+  });
   document.getElementById('check-solution').addEventListener('click', checkSolution);
-  // initialize
-  newGame();
+  newGame('medium');
 });

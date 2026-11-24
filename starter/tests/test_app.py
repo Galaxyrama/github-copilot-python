@@ -1,3 +1,8 @@
+import pytest
+
+import sudoku_logic
+
+
 def test_index_route_renders_game_page(client):
     response = client.get("/")
 
@@ -13,6 +18,37 @@ def test_new_route_returns_requested_puzzle(client):
     assert len(puzzle) == 9
     assert all(len(row) == 9 for row in puzzle)
     assert sum(value != 0 for row in puzzle for value in row) == 40
+    assert sudoku_logic.count_solutions(puzzle, limit=2) == 1
+
+
+@pytest.mark.parametrize(
+    ("difficulty", "expected_clues"),
+    [("easy", 42), ("medium", 34), ("hard", 26)],
+)
+def test_new_route_generates_requested_difficulty(client, difficulty, expected_clues):
+    response = client.get(f"/new?difficulty={difficulty}")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["difficulty"] == difficulty
+    assert sum(value != 0 for row in data["puzzle"] for value in row) == expected_clues
+    assert sudoku_logic.count_solutions(data["puzzle"], limit=2) == 1
+
+
+def test_new_route_defaults_to_medium_difficulty(client):
+    response = client.get("/new")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["difficulty"] == "medium"
+    assert sum(value != 0 for row in data["puzzle"] for value in row) == 34
+
+
+def test_new_route_rejects_invalid_difficulty(client):
+    response = client.get("/new?difficulty=impossible")
+
+    assert response.status_code == 400
+    assert response.get_json() == {"error": "Difficulty must be easy, medium, or hard"}
 
 
 def test_check_route_reports_no_game_in_progress(client):

@@ -7,12 +7,28 @@
 </head>
 <body>
   <h1>Sudoku Game</h1>
+  <div class="game-status" aria-live="polite">
+    <span>Difficulty: <strong id="difficulty-level">Medium</strong></span>
+    <span>Time: <strong id="timer">00:00</strong></span>
+    <span>Hints: <strong id="hints-used">0</strong></span>
+  </div>
   <div id="sudoku-board"></div>
   <div class="controls">
-    <button id="new-game">New Game</button>
-    <button id="check-solution">Check Solution</button>
+    <button id="new-game" type="button">New Game</button>
+    <button id="check-solution" type="button">Check Solution</button>
     <span id="message"></span>
   </div>
+  <dialog id="difficulty-modal" aria-labelledby="difficulty-title">
+    <div class="modal-content">
+      <h2 id="difficulty-title">Choose a difficulty</h2>
+      <div class="difficulty-options">
+        <button type="button" data-difficulty="easy">Easy</button>
+        <button type="button" data-difficulty="medium">Medium</button>
+        <button type="button" data-difficulty="hard">Hard</button>
+      </div>
+      <button id="cancel-new-game" class="secondary-button" type="button">Cancel</button>
+    </div>
+  </dialog>
   <script src="/static/main.js"></script>
 </body>
 </html>

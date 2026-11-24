@@ -1,3 +1,5 @@
+import pytest
+
 import sudoku_logic
 
 
@@ -35,11 +37,42 @@ def test_generate_puzzle_preserves_solution_and_requested_clue_count():
 
     assert _is_complete_valid_board(solution)
     assert sum(value != sudoku_logic.EMPTY for row in puzzle for value in row) == 40
+    assert sudoku_logic.count_solutions(puzzle, limit=2) == 1
     assert all(
         puzzle[row][column] in (sudoku_logic.EMPTY, solution[row][column])
         for row in range(sudoku_logic.SIZE)
         for column in range(sudoku_logic.SIZE)
     )
+
+
+@pytest.mark.parametrize(
+    ("difficulty", "expected_clues"),
+    [("easy", 42), ("medium", 34), ("hard", 26)],
+)
+def test_generate_puzzle_preserves_unique_solution_at_each_difficulty(
+    difficulty, expected_clues
+):
+    puzzle, solution = sudoku_logic.generate_puzzle(difficulty=difficulty)
+
+    assert _is_complete_valid_board(solution)
+    assert sum(value != sudoku_logic.EMPTY for row in puzzle for value in row) == expected_clues
+    assert sudoku_logic.count_solutions(puzzle, limit=2) == 1
+
+
+def test_count_solutions_stops_at_limit_and_does_not_change_board():
+    board = sudoku_logic.create_empty_board()
+    original = [row[:] for row in board]
+
+    assert sudoku_logic.count_solutions(board, limit=2) == 2
+    assert board == original
+
+
+def test_count_solutions_rejects_conflicting_givens():
+    board = sudoku_logic.create_empty_board()
+    board[0][0] = 5
+    board[0][1] = 5
+
+    assert sudoku_logic.count_solutions(board, limit=2) == 0
 
 
 def test_is_safe_rejects_row_column_and_box_conflicts():
