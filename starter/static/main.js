@@ -114,10 +114,12 @@ function validateBoardConflicts(preferredCell = null) {
           `row ${Number(inputs[index].dataset.row) + 1} and column ${Number(inputs[index].dataset.col) + 1}`,
       );
     duplicateWarningActive = true;
-    showMessage(`Duplicate ${source.value}: already exists in ${existingCells.join('; ')}.`);
+    // Removed showMessage(`Duplicate ${source.value}: already exists in ...`)
+    // because after consideration the visual highlighting of the conflicting 
+    // cells is sufficient feedback for the user.
   } else if (duplicateWarningActive) {
     duplicateWarningActive = false;
-    showMessage('');
+    // Removed showMessage('') to clear the message when conflicts are resolved.
   }
 
   return conflicts;

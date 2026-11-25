@@ -21,9 +21,7 @@
     --hinted-text: #1b3d12;
     --incorrect-bg: #ffc4c9;
     --incorrect-text: #7f0000;
-    --conflict-bg: #ffd18a;
-    --conflict-text: #482400;
-    --conflict-indicator: #a13d00;
+    --conflict-bg: #ffcc66;
     --error-text: #b4232d;
     --success-text: #17632a;
     --shadow: rgba(0, 0, 0, 0.12);
@@ -52,9 +50,7 @@
     --hinted-text: #f0ffe6;
     --incorrect-bg: #842d38;
     --incorrect-text: #fff;
-    --conflict-bg: #7a2e00;
-    --conflict-text: #fff;
-    --conflict-indicator: #ffd166;
+    --conflict-bg: #b54708;
     --error-text: #ff9aa3;
     --success-text: #a4efaa;
     --shadow: rgba(0, 0, 0, 0.35);
@@ -144,7 +140,14 @@ h1 {
 .sudoku-cell.cell-conflict:focus {
     background: var(--conflict-bg);
     color: var(--conflict-text);
-    box-shadow: inset 0 0 0 3px var(--conflict-indicator);
+}
+
+.sudoku-cell.prefilled.cell-conflict,
+.sudoku-cell.prefilled.cell-conflict.box-shade,
+.sudoku-cell.cell-hinted.cell-conflict,
+.sudoku-cell.cell-hinted.cell-conflict:focus {
+    background: var(--conflict-bg);
+    color: var(--conflict-text);
 }
 
 .sudoku-cell:nth-child(3),
