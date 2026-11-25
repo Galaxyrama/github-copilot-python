@@ -8,6 +8,7 @@ let elapsedSeconds = 0;
 let hintsUsed = 0;
 let gameCompleted = false;
 let hintPending = false;
+let duplicateWarningActive = false;
 
 const THEME_STORAGE_KEY = 'sudokuTheme';
 
@@ -67,38 +68,59 @@ function currentBoard() {
   return board;
 }
 
-function updateConflictFeedback() {
+function validateBoardConflicts(preferredCell = null) {
   const inputs = [...document.getElementById('sudoku-board').querySelectorAll('input')];
   const conflicts = new Set();
+  const cellsShareUnit = (first, second) => {
+    const sameRow = first.dataset.row === second.dataset.row;
+    const sameColumn = first.dataset.col === second.dataset.col;
+    const sameBox =
+      Math.floor(Number(first.dataset.row) / 3) === Math.floor(Number(second.dataset.row) / 3) &&
+      Math.floor(Number(first.dataset.col) / 3) === Math.floor(Number(second.dataset.col) / 3);
+    return sameRow || sameColumn || sameBox;
+  };
 
-  for (let first = 0; first < inputs.length; first++) {
-    const firstValue = Number.parseInt(inputs[first].value, 10);
-    if (!firstValue) continue;
-    const firstRow = Number(inputs[first].dataset.row);
-    const firstCol = Number(inputs[first].dataset.col);
-
-    for (let second = first + 1; second < inputs.length; second++) {
-      if (Number.parseInt(inputs[second].value, 10) !== firstValue) continue;
-      const secondRow = Number(inputs[second].dataset.row);
-      const secondCol = Number(inputs[second].dataset.col);
-      const sameRow = firstRow === secondRow;
-      const sameColumn = firstCol === secondCol;
-      const sameBox =
-        Math.floor(firstRow / 3) === Math.floor(secondRow / 3) &&
-        Math.floor(firstCol / 3) === Math.floor(secondCol / 3);
-
-      if (sameRow || sameColumn || sameBox) {
-        conflicts.add(first);
-        conflicts.add(second);
+  for (let firstIndex = 0; firstIndex < inputs.length; firstIndex++) {
+    const first = inputs[firstIndex];
+    if (!first.value) continue;
+    for (let secondIndex = firstIndex + 1; secondIndex < inputs.length; secondIndex++) {
+      const second = inputs[secondIndex];
+      if (first.value === second.value && cellsShareUnit(first, second)) {
+        conflicts.add(firstIndex);
+        conflicts.add(secondIndex);
       }
     }
   }
 
-  inputs.forEach((input, index) => {
-    input.classList.toggle('cell-conflict', conflicts.has(index));
-  });
+  inputs.forEach((input, index) => input.classList.toggle('cell-conflict', conflicts.has(index)));
 
-  return conflicts.size > 0;
+  if (conflicts.size > 0) {
+    let sourceIndex = preferredCell ? inputs.indexOf(preferredCell) : -1;
+    if (!conflicts.has(sourceIndex)) {
+      sourceIndex = [...conflicts].find((index) => !inputs[index].disabled);
+    }
+    if (sourceIndex === undefined) sourceIndex = conflicts.values().next().value;
+
+    const source = inputs[sourceIndex];
+    const existingCells = [...conflicts]
+      .filter(
+        (index) =>
+          index !== sourceIndex &&
+          inputs[index].value === source.value &&
+          cellsShareUnit(source, inputs[index]),
+      )
+      .map(
+        (index) =>
+          `row ${Number(inputs[index].dataset.row) + 1} and column ${Number(inputs[index].dataset.col) + 1}`,
+      );
+    duplicateWarningActive = true;
+    showMessage(`Duplicate ${source.value}: already exists in ${existingCells.join('; ')}.`);
+  } else if (duplicateWarningActive) {
+    duplicateWarningActive = false;
+    showMessage('');
+  }
+
+  return conflicts;
 }
 
 function updateTimerDisplay() {
@@ -160,16 +182,17 @@ function createBoardElement() {
         const value = cell.value.replace(/[^1-9]/g, '');
         cell.value = value;
         clearCheckHighlight();
-        showMessage('');
         if (value) cell.classList.add('user-entry');
         else cell.classList.remove('user-entry');
+        const conflicts = validateBoardConflicts(cell);
         updateHintButtonState();
-        const hasConflicts = updateConflictFeedback();
-        if (value && !hasConflicts && !gameCompleted) {
+        if (value && conflicts.size === 0 && !gameCompleted) {
           try {
             await checkForCompletion();
           } catch (error) {
-            showMessage(error.message || 'Unable to check the solution.');
+            if (validateBoardConflicts().size === 0) {
+              showMessage(error.message || 'Unable to check the solution.');
+            }
           }
         }
       });
@@ -181,6 +204,7 @@ function createBoardElement() {
 
 function renderPuzzle(newPuzzle) {
   puzzle = newPuzzle;
+  duplicateWarningActive = false;
   createBoardElement();
   const inputs = document.getElementById('sudoku-board').querySelectorAll('input');
   for (let row = 0; row < SIZE; row++) {
@@ -222,7 +246,7 @@ async function newGame(newDifficulty) {
 
 async function checkForCompletion() {
   if (gameCompleted) return;
-  if (updateConflictFeedback()) return;
+  if (validateBoardConflicts().size > 0) return;
   const board = currentBoard();
   if (board.some((row) => row.some((value) => value === 0))) return;
 
@@ -236,7 +260,7 @@ async function checkForCompletion() {
     throw new Error(data.error || 'Unable to check the solution.');
   }
 
-  if (updateConflictFeedback()) return;
+  if (validateBoardConflicts().size > 0) return;
   applyCheckResult(data.incorrect);
 
   if (data.incorrect.length === 0) {
@@ -258,6 +282,7 @@ function applyCheckResult(incorrectCells) {
 
 async function completeGame(inputs) {
   if (gameCompleted) return;
+  if (validateBoardConflicts().size > 0) return;
   gameCompleted = true;
   clearInterval(timerInterval);
   inputs.forEach((input) => {
@@ -284,7 +309,7 @@ async function completeGame(inputs) {
 
 async function checkSolution() {
   try {
-    if (updateConflictFeedback()) return;
+    if (validateBoardConflicts().size > 0) return;
     const board = currentBoard();
     const response = await fetch('/check', {
       method: 'POST',
@@ -296,7 +321,7 @@ async function checkSolution() {
       throw new Error(data.error || 'Unable to check the solution.');
     }
 
-    if (updateConflictFeedback()) return;
+    if (validateBoardConflicts().size > 0) return;
     applyCheckResult(data.incorrect);
     const inputs = document.getElementById('sudoku-board').querySelectorAll('input');
     if (data.incorrect.length === 0 && board.every((row) => row.every(Boolean))) {
@@ -307,7 +332,9 @@ async function checkSolution() {
       showMessage('Keep going — some cells are still empty.');
     }
   } catch (error) {
-    showMessage(error.message || 'Unable to check the solution.');
+    if (validateBoardConflicts().size === 0) {
+      showMessage(error.message || 'Unable to check the solution.');
+    }
   }
 }
 
@@ -338,10 +365,11 @@ async function requestHint() {
     document.getElementById('hints-used').textContent = String(hintsUsed);
     updateHintButtonState();
     showMessage('');
-    updateConflictFeedback();
     await checkForCompletion();
   } catch (error) {
-    showMessage(error.message || 'Unable to get a hint.');
+    if (validateBoardConflicts().size === 0) {
+      showMessage(error.message || 'Unable to get a hint.');
+    }
   } finally {
     hintPending = false;
     updateHintButtonState();
