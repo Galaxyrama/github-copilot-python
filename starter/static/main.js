@@ -67,6 +67,40 @@ function currentBoard() {
   return board;
 }
 
+function updateConflictFeedback() {
+  const inputs = [...document.getElementById('sudoku-board').querySelectorAll('input')];
+  const conflicts = new Set();
+
+  for (let first = 0; first < inputs.length; first++) {
+    const firstValue = Number.parseInt(inputs[first].value, 10);
+    if (!firstValue) continue;
+    const firstRow = Number(inputs[first].dataset.row);
+    const firstCol = Number(inputs[first].dataset.col);
+
+    for (let second = first + 1; second < inputs.length; second++) {
+      if (Number.parseInt(inputs[second].value, 10) !== firstValue) continue;
+      const secondRow = Number(inputs[second].dataset.row);
+      const secondCol = Number(inputs[second].dataset.col);
+      const sameRow = firstRow === secondRow;
+      const sameColumn = firstCol === secondCol;
+      const sameBox =
+        Math.floor(firstRow / 3) === Math.floor(secondRow / 3) &&
+        Math.floor(firstCol / 3) === Math.floor(secondCol / 3);
+
+      if (sameRow || sameColumn || sameBox) {
+        conflicts.add(first);
+        conflicts.add(second);
+      }
+    }
+  }
+
+  inputs.forEach((input, index) => {
+    input.classList.toggle('cell-conflict', conflicts.has(index));
+  });
+
+  return conflicts.size > 0;
+}
+
 function updateTimerDisplay() {
   const timer = document.getElementById('timer');
   if (timer) timer.textContent = Scoreboard.formatTime(elapsedSeconds);
@@ -126,10 +160,12 @@ function createBoardElement() {
         const value = cell.value.replace(/[^1-9]/g, '');
         cell.value = value;
         clearCheckHighlight();
+        showMessage('');
         if (value) cell.classList.add('user-entry');
         else cell.classList.remove('user-entry');
         updateHintButtonState();
-        if (value && !gameCompleted) {
+        const hasConflicts = updateConflictFeedback();
+        if (value && !hasConflicts && !gameCompleted) {
           try {
             await checkForCompletion();
           } catch (error) {
@@ -186,6 +222,7 @@ async function newGame(newDifficulty) {
 
 async function checkForCompletion() {
   if (gameCompleted) return;
+  if (updateConflictFeedback()) return;
   const board = currentBoard();
   if (board.some((row) => row.some((value) => value === 0))) return;
 
@@ -199,6 +236,7 @@ async function checkForCompletion() {
     throw new Error(data.error || 'Unable to check the solution.');
   }
 
+  if (updateConflictFeedback()) return;
   applyCheckResult(data.incorrect);
 
   if (data.incorrect.length === 0) {
@@ -246,6 +284,7 @@ async function completeGame(inputs) {
 
 async function checkSolution() {
   try {
+    if (updateConflictFeedback()) return;
     const board = currentBoard();
     const response = await fetch('/check', {
       method: 'POST',
@@ -257,6 +296,7 @@ async function checkSolution() {
       throw new Error(data.error || 'Unable to check the solution.');
     }
 
+    if (updateConflictFeedback()) return;
     applyCheckResult(data.incorrect);
     const inputs = document.getElementById('sudoku-board').querySelectorAll('input');
     if (data.incorrect.length === 0 && board.every((row) => row.every(Boolean))) {
@@ -298,6 +338,7 @@ async function requestHint() {
     document.getElementById('hints-used').textContent = String(hintsUsed);
     updateHintButtonState();
     showMessage('');
+    updateConflictFeedback();
     await checkForCompletion();
   } catch (error) {
     showMessage(error.message || 'Unable to get a hint.');
